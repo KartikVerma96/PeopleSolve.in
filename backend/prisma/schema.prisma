@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String?  @unique
+  name         String?
+  image        String?
+  passwordHash String?  @db.VarChar(255)
+  karma        Int      @default(0)
+  isGuest      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  doubts          Doubt[]
+  threadMembers   ThreadMember[]
+  messages        Message[]
+}
+
+model Doubt {
+  id          String   @id @default(cuid())
+  authorId    String
+  exam        String   @db.VarChar(50)
+  subject     String   @db.VarChar(50)
+  title       String   @db.VarChar(200)
+  description String   @db.Text
+  imageUrl    String?  @db.VarChar(500)
+  urgent      Boolean  @default(false)
+  resolved    Boolean  @default(false)
+  viewerCount Int      @default(0)
+  helperCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author  User     @relation(fields: [authorId], references: [id])
+  threads Thread[]
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([exam])
+}
+
+model Thread {
+  id        String   @id @default(cuid())
+  doubtId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doubt    Doubt          @relation(fields: [doubtId], references: [id])
+  members  ThreadMember[]
+  messages Message[]
+
+  @@index([doubtId])
+}
+
+model ThreadMember {
+  id       String @id @default(cuid())
+  threadId String
+  userId   String
+  role     String @default("helper") @db.VarChar(20) // "author" | "helper"
+
+  thread Thread @relation(fields: [threadId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([threadId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  threadId  String
+  senderId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  thread Thread @relation(fields: [threadId], references: [id])
+  sender User   @relation(fields: [senderId], references: [id])
+
+  @@index([threadId, createdAt])
+  @@index([senderId])
+}
