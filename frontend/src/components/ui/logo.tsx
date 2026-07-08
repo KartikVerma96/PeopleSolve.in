@@ -8,8 +8,8 @@ type LogoProps = {
 export function Logo({ className, size = "md" }: LogoProps) {
   const sizeClasses = {
     sm: "text-[15px]",
-    md: "text-[17px]",
-    lg: "text-2xl",
+    md: "text-[22px]",
+    lg: "text-[28px]",
   };
 
   return (

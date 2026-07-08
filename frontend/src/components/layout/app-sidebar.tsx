@@ -2,12 +2,14 @@
 
 import { motion } from "framer-motion";
 import {
+  Compass,
   Crown,
-  Filter,
+  Lightbulb,
   MessageCircle,
   PanelLeftClose,
   PanelLeft,
   PenSquare,
+  Trophy,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -38,10 +40,28 @@ const navItems = [
     hint: "Text, image, or voice",
   },
   {
+    href: "/explore",
+    label: "Explore",
+    icon: Compass,
+    hint: "Browse by exam & subject",
+  },
+  {
+    href: "/tricks",
+    label: "Tricks & Shortcuts",
+    icon: Lightbulb,
+    hint: "Top-rated exam shortcuts",
+  },
+  {
     href: "/messages",
     label: "Messages",
     icon: MessageCircle,
     hint: "1:1 and group threads",
+  },
+  {
+    href: "/leaderboard",
+    label: "Leaderboard",
+    icon: Trophy,
+    hint: "Top helpers this week",
   },
   {
     href: "/profile",
@@ -91,19 +111,19 @@ export function AppSidebar({ className, forceExpanded }: AppSidebarProps) {
     >
       <div
         className={cn(
-          "flex items-center gap-2 px-3 pt-4 pb-3",
+          "flex items-center px-3 pt-4 pb-3",
           collapsed && "flex-col px-2",
         )}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="min-w-0 flex-1">
           {collapsed ? (
-            <span className="flex size-9 shrink-0 items-center justify-center font-extrabold text-[15px] text-[#32cd32] select-none">
+            <span className="flex size-9 items-center justify-center font-extrabold text-[17px] text-[#32cd32] select-none">
               P<span className="text-[#ff4444]">.</span>
             </span>
           ) : (
-            <div className="min-w-0">
+            <div>
               <Logo size="md" />
-              <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <span
                   className="inline-block size-1.5 animate-pulse rounded-full bg-[#32cd32] shadow-[0_0_10px_rgba(50,205,50,0.85)]"
                   aria-hidden
@@ -231,43 +251,6 @@ export function AppSidebar({ className, forceExpanded }: AppSidebarProps) {
           })}
         </motion.nav>
 
-        <Separator className="my-4 bg-sidebar-border/80" />
-
-        <motion.div
-          variants={listVariants}
-          initial="hidden"
-          animate="show"
-          className="flex flex-col gap-0.5"
-        >
-          <p
-            className={cn(
-              "px-2.5 pb-2 font-medium text-[11px] text-muted-foreground/90 uppercase tracking-[0.12em]",
-              collapsed && "sr-only",
-            )}
-          >
-            Soon
-          </p>
-          <motion.div variants={itemVariants}>
-            <Link
-              href="/"
-              title={collapsed ? "Exam & syllabus filters" : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-muted-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-muted-foreground",
-                collapsed && "justify-center px-2",
-              )}
-            >
-              <Filter
-                className="size-[18px] shrink-0"
-                strokeWidth={ICON_STROKE}
-              />
-              {!collapsed && (
-                <span className="truncate font-medium tracking-tight">
-                  Exam filters
-                </span>
-              )}
-            </Link>
-          </motion.div>
-        </motion.div>
       </ScrollArea>
 
       <div className="mt-auto border-sidebar-border border-t p-3">

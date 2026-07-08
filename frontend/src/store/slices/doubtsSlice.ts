@@ -5,9 +5,9 @@ import type { Doubt } from "@/store/types/doubt";
 /** Fields required to append a doubt (IDs and counts optional). */
 export type AddDoubtInput = Omit<
   Doubt,
-  "id" | "createdAt" | "viewerCount" | "helperCount" | "resolved"
+  "id" | "createdAt" | "viewerCount" | "helperCount" | "resolved" | "needFasterMethod" | "mySolveTime"
 > &
-  Partial<Pick<Doubt, "id" | "viewerCount" | "helperCount" | "resolved">>;
+  Partial<Pick<Doubt, "id" | "viewerCount" | "helperCount" | "resolved" | "needFasterMethod" | "mySolveTime">>;
 
 type DoubtsState = {
   items: Doubt[];
@@ -48,6 +48,8 @@ const doubtsSlice = createSlice({
         helperCount: p.helperCount ?? 0,
         urgent: p.urgent,
         resolved: p.resolved ?? false,
+        needFasterMethod: p.needFasterMethod ?? false,
+        mySolveTime: p.mySolveTime ?? null,
       };
       state.items.unshift(doubt);
     },

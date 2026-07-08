@@ -55,6 +55,8 @@ doubtsRouter.get("/", async (req, res) => {
         imageUrl: d.imageUrl,
         urgent: d.urgent,
         resolved: d.resolved,
+        needFasterMethod: d.needFasterMethod,
+        mySolveTime: d.mySolveTime,
         viewerCount: d.viewerCount,
         helperCount: d.helperCount,
         threadCount: d._count.threads,
@@ -106,7 +108,7 @@ doubtsRouter.get("/:id", async (req, res) => {
 /** POST /doubts — create a new doubt. Body: { authorId, exam, subject, title, description, urgent?, imageUrl? } */
 doubtsRouter.post("/", async (req, res) => {
   try {
-    const { authorId, exam, subject, title, description, urgent, imageUrl } =
+    const { authorId, exam, subject, title, description, urgent, imageUrl, mySolveTime, needFasterMethod } =
       req.body ?? {};
 
     if (!authorId || !exam || !subject || !title) {
@@ -131,6 +133,8 @@ doubtsRouter.post("/", async (req, res) => {
         subject,
         title: title.trim(),
         description: (description ?? title).trim(),
+        mySolveTime: mySolveTime?.trim().slice(0, 30) ?? null,
+        needFasterMethod: Boolean(needFasterMethod),
         urgent: Boolean(urgent),
         imageUrl: imageUrl ?? null,
       },
@@ -154,6 +158,8 @@ doubtsRouter.post("/", async (req, res) => {
       imageUrl: doubt.imageUrl,
       urgent: doubt.urgent,
       resolved: doubt.resolved,
+      needFasterMethod: doubt.needFasterMethod,
+      mySolveTime: doubt.mySolveTime,
       viewerCount: doubt.viewerCount,
       helperCount: doubt.helperCount,
       threadCount: 0,

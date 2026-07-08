@@ -1,6 +1,9 @@
 "use client";
 
+import { IncomingCallProvider } from "@/components/call/incoming-call-provider";
+import { GlobalErrorHandler } from "@/components/providers/error-boundary";
 import { NavigationTopLoader } from "@/components/layout/navigation-top-loader";
+import { ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { SessionToReduxSync } from "@/components/providers/session-to-redux-sync";
@@ -19,14 +22,18 @@ type AppProvidersProps = {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ThemeProvider>
+      <GlobalErrorHandler />
       <StoreProvider>
         <SessionProvider>
           <SessionToReduxSync />
           <SocketProvider />
-          <TooltipProvider delay={200}>
-            <NavigationTopLoader />
-            {children}
-          </TooltipProvider>
+          <IncomingCallProvider />
+          <ToastProvider>
+            <TooltipProvider delay={200}>
+              <NavigationTopLoader />
+              {children}
+            </TooltipProvider>
+          </ToastProvider>
         </SessionProvider>
       </StoreProvider>
     </ThemeProvider>

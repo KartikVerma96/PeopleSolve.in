@@ -15,7 +15,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 
+import { AnswerSection } from "@/components/answers/answer-section";
 import { buttonVariants } from "@/components/ui/button";
+import { LogoLoader } from "@/components/ui/logo-loader";
 import { ICON_STROKE } from "@/lib/icon-style";
 import { avatarBackgroundForKey } from "@/lib/avatar-hue";
 import { formatRelativeShort } from "@/lib/format-time";
@@ -70,7 +72,7 @@ export default function DoubtDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <LogoLoader />
       </div>
     );
   }
@@ -117,7 +119,7 @@ export default function DoubtDetailPage() {
       {/* Main card */}
       <div className="rounded-2xl border border-border/80 bg-card/80 shadow-sm dark:border-white/[0.08] dark:bg-card/40">
         {/* Header */}
-        <div className="border-b border-border/60 p-6 dark:border-white/[0.06] md:p-8">
+        <div className="border-b border-border/60 p-4 dark:border-white/[0.06] sm:p-6 md:p-8">
           {/* Badges row */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-lg bg-muted px-2 py-1 text-xs font-medium text-foreground ring-1 ring-border dark:bg-white/[0.06] dark:ring-white/10">
@@ -130,6 +132,17 @@ export default function DoubtDetailPage() {
               <span className="badge-urgent inline-flex items-center gap-1 rounded-lg bg-amber-500/15 px-2 py-1 text-xs font-bold text-amber-700 dark:text-amber-200/95">
                 <Flame className="size-3" strokeWidth={ICON_STROKE} />
                 Urgent
+              </span>
+            )}
+            {doubt.needFasterMethod && (
+              <span className="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                <Clock className="size-3" strokeWidth={ICON_STROKE} />
+                Need faster method
+                {doubt.mySolveTime && (
+                  <span className="font-normal text-blue-600/70 dark:text-blue-400/70">
+                    · currently {doubt.mySolveTime}
+                  </span>
+                )}
               </span>
             )}
             {doubt.resolved && (
@@ -180,7 +193,7 @@ export default function DoubtDetailPage() {
         </div>
 
         {/* Body */}
-        <div className="p-6 md:p-8">
+        <div className="p-4 sm:p-6 md:p-8">
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
             {doubt.description}
           </p>
@@ -199,7 +212,7 @@ export default function DoubtDetailPage() {
         </div>
 
         {/* Action footer */}
-        <div className="border-t border-border/60 p-6 dark:border-white/[0.06] md:p-8">
+        <div className="border-t border-border/60 p-4 dark:border-white/[0.06] sm:p-6 md:p-8">
           {doubt.resolved ? (
             <div className="flex items-center gap-3 rounded-xl bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="size-5 shrink-0" strokeWidth={ICON_STROKE} />
@@ -266,6 +279,9 @@ export default function DoubtDetailPage() {
           {doubt.threadCount} helper{doubt.threadCount !== 1 ? "s" : ""} already engaged with this doubt
         </p>
       )}
+
+      {/* Answers section */}
+      <AnswerSection doubtId={doubt.id} doubtAuthorId={doubt.authorId} />
     </motion.div>
   );
 }

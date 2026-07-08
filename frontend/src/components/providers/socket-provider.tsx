@@ -3,7 +3,8 @@
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 
-import { getSocket, disconnectSocket } from "@/lib/socket";
+import { getSocket } from "@/lib/socket";
+import { useToast } from "@/components/ui/toast";
 import { useAppDispatch } from "@/store/hooks";
 import { setOnlineStats } from "@/store/slices/onlineUsersSlice";
 import { addDoubt, patchDoubt } from "@/store/slices/doubtsSlice";
@@ -11,11 +12,13 @@ import { incrementUnread } from "@/store/slices/notificationsSlice";
 import { initialsFromName } from "@/lib/initials";
 
 /**
- * Connects to Socket.io when authenticated, syncs live feed events to Redux.
+ * Connects to Socket.io when authenticated, syncs live feed events to Redux
+ * and shows in-app toast notifications.
  */
 export function SocketProvider() {
   const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -23,11 +26,11 @@ export function SocketProvider() {
     const userId = session?.user?.id;
     const socket = getSocket(userId);
 
-    socket.on("presence", (data: { totalOnline: number; activeHelpers: number }) => {
+    const onPresence = (data: { totalOnline: number; activeHelpers: number }) => {
       dispatch(setOnlineStats(data));
-    });
+    };
 
-    socket.on("doubt:new", (doubt: Record<string, unknown>) => {
+    const onDoubtNew = (doubt: Record<string, unknown>) => {
       dispatch(
         addDoubt({
           id: doubt.id as string,
@@ -44,33 +47,50 @@ export function SocketProvider() {
           helperCount: (doubt.helperCount as number) ?? 0,
         }),
       );
-    });
+    };
 
-    socket.on("doubt:update", (data: { id: string; [key: string]: unknown }) => {
+    const onDoubtUpdate = (data: { id: string; [key: string]: unknown }) => {
       dispatch(patchDoubt(data));
-    });
+    };
 
-    // New thread notification (someone started helping your doubt)
-    socket.on("thread:new", () => {
+    // Someone started helping your doubt
+    const onThreadNew = (data: { doubtTitle?: string; helperName?: string }) => {
       dispatch(incrementUnread());
-    });
+      addToast({
+        type: "notification",
+        title: "Someone is helping!",
+        message: data.helperName
+          ? `${data.helperName} started helping with "${data.doubtTitle ?? "your doubt"}"`
+          : "A helper joined your doubt thread",
+      });
+    };
 
-    // New message notification (when not on messages page)
-    socket.on("message:new", () => {
+    // New message when not on messages page
+    const onMessageNotify = (data: { senderName?: string; preview?: string }) => {
       if (!window.location.pathname.startsWith("/messages")) {
         dispatch(incrementUnread());
+        addToast({
+          type: "notification",
+          title: data.senderName ? `Message from ${data.senderName}` : "New message",
+          message: data.preview?.slice(0, 60) ?? "You have a new message",
+        });
       }
-    });
+    };
+
+    socket.on("presence", onPresence);
+    socket.on("doubt:new", onDoubtNew);
+    socket.on("doubt:update", onDoubtUpdate);
+    socket.on("thread:new", onThreadNew);
+    socket.on("message:notify", onMessageNotify);
 
     return () => {
-      socket.off("presence");
-      socket.off("doubt:new");
-      socket.off("doubt:update");
-      socket.off("thread:new");
-      socket.off("message:new");
-      disconnectSocket();
+      socket.off("presence", onPresence);
+      socket.off("doubt:new", onDoubtNew);
+      socket.off("doubt:update", onDoubtUpdate);
+      socket.off("thread:new", onThreadNew);
+      socket.off("message:notify", onMessageNotify);
     };
-  }, [status, session?.user?.id, dispatch]);
+  }, [status, session?.user?.id, dispatch, addToast]);
 
   return null;
 }

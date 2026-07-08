@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { prisma } from "../lib/prisma.js";
-import { emitDoubtUpdate, emitToUser } from "../socket.js";
+import { emitDoubtUpdate, emitToUser, emitToThread } from "../socket.js";
 
 export const threadsRouter = Router();
 
@@ -257,7 +257,7 @@ threadsRouter.post("/:id/messages", async (req, res) => {
       data: { updatedAt: new Date() },
     });
 
-    res.status(201).json({
+    const payload = {
       id: message.id,
       threadId: message.threadId,
       senderId: message.senderId,
@@ -265,7 +265,27 @@ threadsRouter.post("/:id/messages", async (req, res) => {
       senderImage: message.sender.image,
       body: message.body,
       createdAt: message.createdAt.toISOString(),
+    };
+
+    // Broadcast to all clients in the thread room (for active chat)
+    emitToThread(threadId, "message:new", payload);
+
+    // Notify other thread members for badge (even if not in the chat room)
+    const members = await prisma.threadMember.findMany({
+      where: { threadId },
+      select: { userId: true },
     });
+    for (const m of members) {
+      if (m.userId !== senderId) {
+        emitToUser(m.userId, "message:notify", {
+          threadId,
+          senderName: message.sender.name,
+          preview: message.body.slice(0, 80),
+        });
+      }
+    }
+
+    res.status(201).json(payload);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to send message" });

@@ -1,19 +1,31 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { LogoLoader } from "@/components/ui/logo-loader";
 import {
+  ArrowDown,
   ArrowRightToLine,
+  ArrowUp,
   Calendar,
+  Check,
+  Coffee,
   HandHelping,
+  IndianRupee,
   Medal,
   CircleHelp,
+  Pencil,
   Rocket,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useCallback, useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { updateUserProfile, fetchPaymentHistory, type PaymentHistoryItem } from "@/lib/api";
+import { formatRelativeShort } from "@/lib/format-time";
 import { ICON_STROKE } from "@/lib/icon-style";
 import { avatarBackgroundForKey } from "@/lib/avatar-hue";
 import { useAppSelector } from "@/store/hooks";
@@ -39,9 +51,9 @@ export default function ProfilePage() {
 
   if (status === "loading") {
     return (
-      <p className="py-20 text-center text-muted-foreground text-sm">
-        Loading...
-      </p>
+      <div className="flex items-center justify-center py-20">
+        <LogoLoader />
+      </div>
     );
   }
 
@@ -208,6 +220,12 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* UPI / Buy me a Coffee settings */}
+      {!isGuest && <UpiSection userId={session.user.id} />}
+
+      {/* Payment history */}
+      {!isGuest && <PaymentHistorySection userId={session.user.id} />}
+
       {/* Joined date */}
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <Calendar className="size-3.5" strokeWidth={ICON_STROKE} />
@@ -216,5 +234,181 @@ export default function ProfilePage() {
           : "Member since recently"}
       </div>
     </motion.div>
+  );
+}
+
+/** UPI ID editor section for receiving tips. */
+function UpiSection({ userId }: { userId: string }) {
+  const [editing, setEditing] = useState(false);
+  const [upiId, setUpiId] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!upiId.trim()) return;
+    setSaving(true);
+    try {
+      await updateUserProfile(userId, { upiId: upiId.trim() });
+      setSaved(true);
+      setEditing(false);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border/80 bg-card/80 p-6 shadow-sm dark:border-white/[0.08] dark:bg-card/40">
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/15">
+          <Coffee className="size-4 text-amber-600 dark:text-amber-400" strokeWidth={ICON_STROKE} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-sm text-foreground">
+            Buy me a Coffee
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Add your UPI ID so students you help can tip you.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4">
+        {editing ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
+              placeholder="yourname@upi"
+              className="h-11 flex-1 text-sm sm:h-9"
+              autoFocus
+            />
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!upiId.trim() || saving}
+              className="h-11 gap-1 rounded-lg sm:h-auto"
+            >
+              <Check className="size-3.5" strokeWidth={ICON_STROKE} />
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground dark:bg-white/[0.04]">
+              {saved ? (
+                <span className="text-primary">UPI ID saved!</span>
+              ) : (
+                "No UPI ID set"
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditing(true)}
+              className="gap-1 rounded-lg"
+            >
+              <Pencil className="size-3.5" strokeWidth={ICON_STROKE} />
+              Edit
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Payment history — tips sent and received. */
+function PaymentHistorySection({ userId }: { userId: string }) {
+  const [payments, setPayments] = useState<PaymentHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await fetchPaymentHistory(userId);
+      setPayments(data.payments);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) return null;
+  if (payments.length === 0) return null;
+
+  const totalReceived = payments
+    .filter((p) => p.direction === "received")
+    .reduce((sum, p) => sum + p.helperAmount, 0);
+  const totalSent = payments
+    .filter((p) => p.direction === "sent")
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  return (
+    <div className="rounded-2xl border border-border/80 bg-card/80 p-6 shadow-sm dark:border-white/[0.08] dark:bg-card/40">
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/15">
+          <IndianRupee className="size-4 text-primary" strokeWidth={ICON_STROKE} />
+        </div>
+        <div>
+          <h3 className="font-semibold text-sm text-foreground">Payment history</h3>
+          <p className="text-xs text-muted-foreground">
+            Earned: <span className="font-medium text-primary">₹{(totalReceived / 100).toFixed(0)}</span>
+            {" · "}Sent: <span className="font-medium text-foreground">₹{(totalSent / 100).toFixed(0)}</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {payments.slice(0, 10).map((p) => (
+          <div
+            key={p.id}
+            className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 dark:bg-white/[0.03]"
+          >
+            <div
+              className={cn(
+                "flex size-7 shrink-0 items-center justify-center rounded-full",
+                p.direction === "received"
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+              )}
+            >
+              {p.direction === "received" ? (
+                <ArrowDown className="size-3.5" strokeWidth={ICON_STROKE} />
+              ) : (
+                <ArrowUp className="size-3.5" strokeWidth={ICON_STROKE} />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-foreground">
+                {p.direction === "received" ? "From" : "To"}{" "}
+                {p.otherUser.name ?? "User"}
+              </p>
+              {p.note && (
+                <p className="truncate text-[10px] text-muted-foreground">{p.note}</p>
+              )}
+            </div>
+            <div className="text-right">
+              <p
+                className={cn(
+                  "text-xs font-bold tabular-nums",
+                  p.direction === "received" ? "text-emerald-600 dark:text-emerald-400" : "text-foreground",
+                )}
+              >
+                {p.direction === "received" ? "+" : "-"}₹{((p.direction === "received" ? p.helperAmount : p.amount) / 100).toFixed(0)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {formatRelativeShort(p.createdAt)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

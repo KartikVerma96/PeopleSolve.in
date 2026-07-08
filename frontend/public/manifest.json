@@ -1,0 +1,21 @@
+{
+  "name": "PeopleSolve",
+  "short_name": "PeopleSolve",
+  "description": "Free peer-to-peer doubt solving for exam prep",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#32cd32",
+  "background_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

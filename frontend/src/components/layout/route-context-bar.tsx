@@ -12,6 +12,18 @@ const ROUTES: Record<string, { title: string; subtitle: string }> = {
     title: "Profile & karma",
     subtitle: "Your reputation and activity — sign in to track karma.",
   },
+  "/leaderboard": {
+    title: "Leaderboard",
+    subtitle: "Top helpers ranked by karma — earn more by solving doubts.",
+  },
+  "/explore": {
+    title: "Explore",
+    subtitle: "Browse doubts by exam, subject, or keyword.",
+  },
+  "/tricks": {
+    title: "Tricks & Shortcuts",
+    subtitle: "Top-rated exam shortcuts from the best helpers — the fastest approaches, not textbook methods.",
+  },
 };
 
 export function RouteContextBar() {

@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, Eye, Flame, HandHelping } from "lucide-react";
+import { CheckCircle2, Clock, Eye, Flame, HandHelping } from "lucide-react";
 import Link from "next/link";
 
+import { ShareButton } from "@/components/ui/share-button";
 import { ICON_STROKE } from "@/lib/icon-style";
 import { avatarBackgroundForKey } from "@/lib/avatar-hue";
 import { formatRelativeShort } from "@/lib/format-time";
@@ -94,6 +95,17 @@ export function DoubtCard({
                 Resolved
               </span>
             )}
+            {doubt.needFasterMethod && (
+              <span className="inline-flex items-center gap-0.5 rounded-md bg-blue-500/10 px-1.5 py-0.5 font-medium text-[11px] text-blue-700 dark:text-blue-300">
+                <Clock className="size-3" strokeWidth={ICON_STROKE} />
+                Need faster method
+                {doubt.mySolveTime && (
+                  <span className="font-normal text-blue-600/60 dark:text-blue-400/60">
+                    · {doubt.mySolveTime}
+                  </span>
+                )}
+              </span>
+            )}
           </div>
           <Link href={`/doubt/${doubt.id}`}>
             <h3 className="font-medium text-[15px] text-foreground leading-snug tracking-tight hover:text-primary transition-colors">
@@ -121,7 +133,12 @@ export function DoubtCard({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-start justify-end md:pt-0.5">
+      <div className="flex shrink-0 items-center gap-1.5 justify-end md:pt-0.5">
+        <ShareButton
+          title={doubt.title}
+          text={`Help me with: ${doubt.title} (${doubt.exam} - ${doubt.subject})`}
+          url={`/doubt/${doubt.id}`}
+        />
         {resolved ? (
           <span className="inline-flex h-9 items-center rounded-lg bg-emerald-500/10 px-4 text-xs font-medium text-emerald-700 dark:text-emerald-300">
             <CheckCircle2 className="mr-1.5 size-3.5" strokeWidth={ICON_STROKE} />

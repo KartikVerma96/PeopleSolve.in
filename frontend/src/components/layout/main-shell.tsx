@@ -101,7 +101,7 @@ export function MainShell({ children }: MainShellProps) {
               "bg-[radial-gradient(ellipse_100%_70%_at_50%_-10%,rgba(50,205,50,0.06),transparent_50%)]",
             )}
           >
-            <div className="relative mx-auto w-full max-w-6xl px-5 py-5 sm:px-8 md:px-10 md:py-6 lg:px-12">
+            <div className="relative mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-5 md:px-10 md:py-6 lg:px-12">
               <RouteContextBar />
               {children}
             </div>

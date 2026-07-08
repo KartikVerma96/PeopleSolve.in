@@ -72,6 +72,8 @@ export function LiveFeed({ className }: { className?: string }) {
             helperCount: d.helperCount,
             urgent: d.urgent,
             resolved: d.resolved,
+            needFasterMethod: d.needFasterMethod ?? false,
+            mySolveTime: d.mySolveTime ?? null,
           })),
         ),
       );

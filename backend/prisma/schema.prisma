@@ -13,14 +13,26 @@ model User {
   name         String?
   image        String?
   passwordHash String?  @db.VarChar(255)
+  upiId        String?  @db.VarChar(100)
+  referralCode String?  @unique @db.VarChar(20)
   karma        Int      @default(0)
   isGuest      Boolean  @default(false)
+  isVerified   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  doubts          Doubt[]
-  threadMembers   ThreadMember[]
-  messages        Message[]
+  doubts           Doubt[]
+  threadMembers    ThreadMember[]
+  messages         Message[]
+  paymentsSent     Payment[]      @relation("PaymentFrom")
+  paymentsReceived Payment[]      @relation("PaymentTo")
+  answers          Answer[]
+  answerVotes      AnswerVote[]
+  answerRatings    AnswerRating[]
+  reports          Report[]
+  referralsMade    Referral[]     @relation("ReferrerUser")
+  referredBy       Referral?      @relation("ReferredUser")
+  verification     Verification?
 }
 
 model Doubt {
@@ -30,8 +42,10 @@ model Doubt {
   subject     String   @db.VarChar(50)
   title       String   @db.VarChar(200)
   description String   @db.Text
-  imageUrl    String?  @db.VarChar(500)
-  urgent      Boolean  @default(false)
+  imageUrl        String?  @db.VarChar(500)
+  mySolveTime     String?  @db.VarChar(30)  // "3 min" — how long the student currently takes
+  needFasterMethod Boolean @default(false)   // "I need a faster method"
+  urgent          Boolean  @default(false)
   resolved    Boolean  @default(false)
   viewerCount Int      @default(0)
   helperCount Int      @default(0)
@@ -40,6 +54,7 @@ model Doubt {
 
   author  User     @relation(fields: [authorId], references: [id])
   threads Thread[]
+  answers Answer[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -55,6 +70,7 @@ model Thread {
   doubt    Doubt          @relation(fields: [doubtId], references: [id])
   members  ThreadMember[]
   messages Message[]
+  payments Payment[]
 
   @@index([doubtId])
 }
@@ -63,7 +79,7 @@ model ThreadMember {
   id       String @id @default(cuid())
   threadId String
   userId   String
-  role     String @default("helper") @db.VarChar(20) // "author" | "helper"
+  role     String @default("helper") @db.VarChar(20)
 
   thread Thread @relation(fields: [threadId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
@@ -84,4 +100,128 @@ model Message {
 
   @@index([threadId, createdAt])
   @@index([senderId])
+}
+
+model Payment {
+  id                 String   @id @default(cuid())
+  fromUserId         String
+  toUserId           String
+  threadId           String?
+  amount             Int
+  platformFee        Int
+  helperAmount       Int
+  status             String   @default("created") @db.VarChar(20)
+  razorpayOrderId    String?  @db.VarChar(100)
+  razorpayPaymentId  String?  @db.VarChar(100)
+  razorpaySignature  String?  @db.VarChar(255)
+  note               String?  @db.VarChar(200)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  fromUser User    @relation("PaymentFrom", fields: [fromUserId], references: [id])
+  toUser   User    @relation("PaymentTo", fields: [toUserId], references: [id])
+  thread   Thread? @relation(fields: [threadId], references: [id])
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([razorpayOrderId])
+}
+
+model Answer {
+  id             String   @id @default(cuid())
+  doubtId        String
+  authorId       String
+  approachName   String?  @db.VarChar(100)  // "Successive discount formula"
+  oneLinerTrick  String?  @db.VarChar(300)  // the actual shortcut in 1 line
+  quickSolution  String   @db.Text          // apply the trick (2-3 lines)
+  detailedExplanation String? @db.Text      // optional — WHY the trick works
+  solveTime      String?  @db.VarChar(20)   // "~20 sec", "~1 min"
+  examTags       String?  @db.VarChar(300)  // "SSC CGL 2023, IBPS PO Prelims"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  doubt   Doubt          @relation(fields: [doubtId], references: [id])
+  author  User           @relation(fields: [authorId], references: [id])
+  votes   AnswerVote[]
+  ratings AnswerRating[]
+
+  @@index([doubtId])
+  @@index([authorId])
+}
+
+model AnswerVote {
+  id       String @id @default(cuid())
+  answerId String
+  userId   String
+  value    Int    // 1 = upvote, -1 = downvote
+
+  answer Answer @relation(fields: [answerId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([answerId, userId])
+}
+
+model AnswerRating {
+  id        String   @id @default(cuid())
+  answerId  String
+  raterId   String
+  rating    Int      // 1-5
+  createdAt DateTime @default(now())
+
+  answer Answer @relation(fields: [answerId], references: [id])
+  rater  User   @relation(fields: [raterId], references: [id])
+
+  @@unique([answerId, raterId])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  targetType String   @db.VarChar(20) // "doubt" | "answer" | "message" | "user"
+  targetId   String
+  reason     String   @db.Text
+  status     String   @default("pending") @db.VarChar(20) // "pending" | "reviewed" | "dismissed"
+  createdAt  DateTime @default(now())
+
+  reporter User @relation(fields: [reporterId], references: [id])
+
+  @@index([targetType, targetId])
+}
+
+model Referral {
+  id             String   @id @default(cuid())
+  referrerId     String
+  referredUserId String   @unique
+  code           String   @db.VarChar(20)
+  karmaAwarded   Int
+  createdAt      DateTime @default(now())
+
+  referrer     User @relation("ReferrerUser", fields: [referrerId], references: [id])
+  referredUser User @relation("ReferredUser", fields: [referredUserId], references: [id])
+}
+
+model DailyChallenge {
+  id          String   @id @default(cuid())
+  exam        String   @db.VarChar(50)
+  subject     String   @db.VarChar(50)
+  title       String   @db.VarChar(200)
+  description String   @db.Text
+  answer      String?  @db.Text
+  publishDate DateTime
+  createdAt   DateTime @default(now())
+
+  @@unique([exam, publishDate])
+  @@index([publishDate])
+}
+
+model Verification {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  type        String    @db.VarChar(30) // "college_id" | "scorecard" | "other"
+  documentUrl String    @db.VarChar(500)
+  status      String    @default("pending") @db.VarChar(20) // "pending" | "verified" | "rejected"
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }

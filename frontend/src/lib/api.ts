@@ -35,6 +35,8 @@ export type ApiDoubt = {
   imageUrl: string | null;
   urgent: boolean;
   resolved: boolean;
+  needFasterMethod: boolean;
+  mySolveTime: string | null;
   viewerCount: number;
   helperCount: number;
   threadCount: number;
@@ -69,6 +71,8 @@ export type ApiDoubtDetail = {
   title: string;
   description: string;
   imageUrl: string | null;
+  mySolveTime: string | null;
+  needFasterMethod: boolean;
   urgent: boolean;
   resolved: boolean;
   viewerCount: number;
@@ -92,6 +96,8 @@ export function createDoubt(body: {
   description: string;
   urgent: boolean;
   imageUrl?: string | null;
+  mySolveTime?: string;
+  needFasterMethod?: boolean;
 }): Promise<ApiDoubt> {
   return apiFetch("/doubts", { method: "POST", body: JSON.stringify(body) });
 }
@@ -197,6 +203,181 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   }
 
   return res.json() as Promise<{ url: string }>;
+}
+
+// --- Answers ---
+
+export type ApiAnswer = {
+  id: string;
+  doubtId: string;
+  authorId: string;
+  authorName: string | null;
+  authorImage: string | null;
+  authorKarma: number;
+  authorVerified: boolean;
+  approachName: string | null;
+  oneLinerTrick: string | null;
+  quickSolution: string;
+  detailedExplanation: string | null;
+  solveTime: string | null;
+  examTags: string | null;
+  upvotes: number;
+  downvotes: number;
+  userVote: number;
+  rating: number | null;
+  ratingCount: number;
+  createdAt: string;
+};
+
+export function fetchAnswers(
+  doubtId: string,
+  userId?: string,
+): Promise<{ answers: ApiAnswer[] }> {
+  const qs = userId ? `&userId=${encodeURIComponent(userId)}` : "";
+  return apiFetch(`/answers?doubtId=${encodeURIComponent(doubtId)}${qs}`);
+}
+
+export function postAnswer(body: {
+  doubtId: string;
+  authorId: string;
+  approachName?: string;
+  oneLinerTrick?: string;
+  quickSolution: string;
+  detailedExplanation?: string;
+  solveTime?: string;
+  examTags?: string;
+}): Promise<ApiAnswer> {
+  return apiFetch("/answers", { method: "POST", body: JSON.stringify(body) });
+}
+
+export type ApiTrick = {
+  id: string;
+  approachName: string | null;
+  oneLinerTrick: string | null;
+  quickSolution: string;
+  solveTime: string | null;
+  examTags: string | null;
+  rating: number;
+  ratingCount: number;
+  authorName: string | null;
+  authorKarma: number;
+  authorVerified: boolean;
+  doubt: { id: string; title: string; exam: string; subject: string };
+};
+
+export function fetchTricks(params?: {
+  exam?: string;
+  subject?: string;
+  q?: string;
+}): Promise<{ tricks: ApiTrick[] }> {
+  const sp = new URLSearchParams();
+  if (params?.exam) sp.set("exam", params.exam);
+  if (params?.subject) sp.set("subject", params.subject);
+  if (params?.q) sp.set("q", params.q);
+  const qs = sp.toString();
+  return apiFetch(`/answers/tricks${qs ? `?${qs}` : ""}`);
+}
+
+export function voteAnswer(
+  answerId: string,
+  userId: string,
+  value: number,
+): Promise<{ upvotes: number; downvotes: number; userVote: number }> {
+  return apiFetch(`/answers/${answerId}/vote`, {
+    method: "POST",
+    body: JSON.stringify({ userId, value }),
+  });
+}
+
+export function rateAnswer(
+  answerId: string,
+  raterId: string,
+  rating: number,
+): Promise<{ rating: number; count: number }> {
+  return apiFetch(`/answers/${answerId}/rate`, {
+    method: "POST",
+    body: JSON.stringify({ raterId, rating }),
+  });
+}
+
+// --- Payments ---
+
+export type CreateOrderResponse = {
+  paymentId: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  helperName: string | null;
+  keyId: string;
+};
+
+export function createPaymentOrder(body: {
+  fromUserId: string;
+  toUserId: string;
+  threadId?: string;
+  amountInr: number;
+  note?: string;
+}): Promise<CreateOrderResponse> {
+  return apiFetch("/payments/create-order", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function verifyPayment(body: {
+  paymentId: string;
+  razorpayPaymentId: string;
+  razorpayOrderId: string;
+  razorpaySignature: string;
+}): Promise<{ success: boolean }> {
+  return apiFetch("/payments/verify", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export type PaymentHistoryItem = {
+  id: string;
+  amount: number;
+  helperAmount: number;
+  platformFee: number;
+  note: string | null;
+  direction: "sent" | "received";
+  otherUser: { id: string; name: string | null };
+  createdAt: string;
+};
+
+export function fetchPaymentHistory(
+  userId: string,
+): Promise<{ payments: PaymentHistoryItem[] }> {
+  return apiFetch(`/payments/history?userId=${encodeURIComponent(userId)}`);
+}
+
+// --- Users ---
+
+export function updateUserProfile(
+  userId: string,
+  data: { upiId?: string; name?: string },
+): Promise<{ id: string; name: string | null; upiId: string | null }> {
+  return apiFetch(`/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function fetchUserProfile(
+  userId: string,
+): Promise<{
+  id: string;
+  name: string | null;
+  upiId: string | null;
+  karma: number;
+  doubtsPosted: number;
+  tipsReceived: number;
+  totalEarned: number;
+  createdAt: string;
+}> {
+  return apiFetch(`/users/${userId}`);
 }
 
 export { API_BASE };

@@ -16,4 +16,6 @@ export type Doubt = {
   helperCount: number;
   urgent: boolean;
   resolved: boolean;
+  needFasterMethod: boolean;
+  mySolveTime: string | null;
 };
